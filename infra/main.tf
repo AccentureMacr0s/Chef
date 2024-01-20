@@ -1,75 +1,92 @@
+provider "aws" {
+  region = var.aws_region
+}
+
 resource "aws_instance" "aws_linux_instance" {
   ami           = var.aws_linux_ami
   instance_type = "t2.micro"
-  # Другие необходимые конфигурации
+  key_name      = var.key_name
+  security_groups = [aws_security_group.example_sg.name]
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_profile.name
+  }
+
+  tags = {
+    Name = "AwsLinuxInstance"
+  }
 }
 
 resource "aws_instance" "varbox_linux_instance" {
   ami           = var.varbox_linux_ami
-  instance_type = "t2.micro"
-  # Другие необходимые конфигурации
+  instance_type = "var.instance_type"
+   key_name      = var.key_name
+  security_groups = [aws_security_group.example_sg.name]
+
+  iam_instance_profile {
+    name = aws_iam_instance_profile.ec2_profile.name
+  }
+
+  tags = {
+    Name = "VarboxInstance"
+  }
 }
 
 
-resource "aws_iam_role" "cloudwatch_role" {
-  name = "cloudwatch_role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Action = "sts:AssumeRole",
-        Effect = "Allow",
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        },
-      },
-    ]
-  })
+# IAM instance profile for the EC2 instances to use the assigned role
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_profile"
+  role = aws_iam_role.ec2_cloudwatch_role.name
 }
 
-resource "aws_iam_policy" "cloudwatch_policy" {
-  name        = "cloudwatch_policy"
-  description = "A policy for CloudWatch to allow EC2 to send metrics"
+# Assuming the CloudWatch and SSM policies are already defined (as shown in iam.tf)
+
+# Attach the SSM policy to the role
+resource "aws_iam_policy_attachment" "ssm_policy_attachment" {
+  name       = "ssm-policy-attachment"
+  roles      = [aws_iam_role.ec2_cloudwatch_role.name]
+  policy_arn = aws_iam_policy.ssm_policy.arn
+}
+
+# Define the SSM policy (this should be similar to the CloudWatch policy definition)
+resource "aws_iam_policy" "ssm_policy" {
+  name        = "ssm_policy"
+  description = "Policy that allows instances to interact with AWS Systems Manager"
 
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
         Action = [
-          "cloudwatch:PutMetricData",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:CreateLogGroup"
+          "ssm:DescribeAssociation",
+          "ssm:GetDeployablePatchSnapshotForInstance",
+          "ssm:GetDocument",
+          "ssm:DescribeDocument",
+          "ssm:GetManifest",
+          "ssm:GetParameter",
+          "ssm:GetParameters",
+          "ssm:ListAssociations",
+          "ssm:ListInstanceAssociations",
+          "ssm:PutInventory",
+          "ssm:PutComplianceItems",
+          "ssm:PutConfigurePackageResult",
+          "ssm:UpdateAssociationStatus",
+          "ssm:UpdateInstanceAssociationStatus",
+          "ssm:UpdateInstanceInformation"
         ],
-        Effect   = "Allow",
+        Effect = "Allow",
         Resource = "*",
       },
+      # Additional statements as needed
     ]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "cloudwatch_policy_attachment" {
-  role       = aws_iam_role.cloudwatch_role.name
+# Attach the IAM role to the EC2 instance profile
+resource "aws_iam_role_policy_attachment" "ec2_cloudwatch_role_attachment" {
+  role       = aws_iam_role.ec2_cloudwatch_role.name
   policy_arn = aws_iam_policy.cloudwatch_policy.arn
 }
 
-resource "aws_security_group" "example" {
-  name        = "example_security_group"
-  description = "Security group for example usage"
-  vpc_id      = aws_vpc.example.id
+# Add any additional resources and configuration needed here...
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
