@@ -3,24 +3,24 @@ variable "aws_region" {
   default     = "us-west-2"
 }
 
-variable "instance_configuration" {
-  description = "Configuration for EC2 instances"
-  type = map(object({
-    ami           = string
-    instance_type = string
-    key_name      = string
-    name          = string
-  }))
-  default = {
-    "instance1" = {
-      ami           = "ami-0c55b159cbfafe1f0"
-      instance_type = "t2.micro"
-      key_name      = "your-key-name"
-      name          = "Instance1"
-    },
-    # Add more instances if needed
-  }
-}
+#variable "instance_configuration" {
+#  description = "Configuration for EC2 instances"
+#  type = map(object({
+#    ami           = string
+#    instance_type = string
+#    key_name      = string
+#    name          = string
+#  }))
+#  default = {
+#    "instance1" = {
+#      ami           = "ami-0c55b159cbfafe1f0"
+#      instance_type = "t2.micro"
+#      key_name      = "your-key-name"
+#      name          = "Instance1"
+#    },
+#    # more instances if needed
+#  }
+#}
 variable "aws_linux_ami" {
   description = "AMI ID for AWS Linux 2"
   type        = string
