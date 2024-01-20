@@ -1,27 +1,11 @@
 #!/bin/bash
-# Установка CloudWatch, Postgres 15 и AWS SSM
-#sudo yum update -y
-#sudo yum install -y amazon-cloudwatch-agent
-#sudo amazon-linux-extras install postgresql15
-#sudo yum install -y amazon-ssm-agent
-#sudo systemctl enable amazon-ssm-agent
-
-# Обновленный скрипт для установки CloudWatch, Postgres 15 и AWS SSM с обработкой ошибок
-
 set -Eeuo pipefail
-# Эта команда устанавливает строгий режим обработки ошибок.
-# -E наследует обработчик ошибок в функциях,
-# -e завершает выполнение при встрече ошибки,
-# -u рассматривает неустановленные переменные как ошибку,
-# -o pipefail возвращает код ошибки всего pipeline.
 
 trap 'catch $? $LINENO' EXIT
-# Этот trap вызывает функцию catch при выходе из скрипта с ошибкой.
 
 catch() {
   if [ "$1" != "0" ]; then
-    # Если скрипт завершился с ошибкой, выводится сообщение.
-    echo "Ошибка $1 возникла на $2 строке."
+    echo "Error $1 occurred on $2 line."
     exit $1
   fi
 }
@@ -48,7 +32,7 @@ install_aws_ssm() {
       PLUGIN_URL="https://s3.amazonaws.com/session-manager-downloads/plugin/latest/linux_arm64/session-manager-plugin.rpm"
       ;;
     *)
-      echo "Архитектура $ARCH не поддерживается."
+      echo "Architecture $ARCH is not supported."
       exit 1
       ;;
   esac
@@ -59,17 +43,15 @@ install_aws_ssm() {
   rm -f "$TMP_FILE"
 
   if ! session-manager-plugin; then
-    echo "Ошибка при проверке установки плагина SSM."
+    echo "SSM plugin installation check failed."
     exit 1
   fi
 }
 
-# Обновление системы
-sudo yum update -y
-
-# Вызов функций установки
-install_cloudwatch
-install_postgres
-install_aws_ssm
-
-echo "Установка завершена успешно."
+main() {
+  sudo yum update -y
+  install_cloudwatch
+  install_postgres
+  install_aws_ssm
+  echo "Installation completed successfully."
+}
