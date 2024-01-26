@@ -16,6 +16,58 @@ This EC2 configuration Terraform Ruby Chef JSON
 └── packer/
     └── setup_aws_linux.sh       # Shell script for initial setup
 ```
+New project structure
+```
+LUMINOR/
+├── infra/
+│   ├── cookbooks/               # Chef cookbooks
+│   │   ├── cloudwatch/          # CloudWatch cookbook
+│   │   │   ├── recipes/
+│   │   │   │   └── default.rb
+│   │   │   └── metadata.rb
+│   │   ├── postgresql/          # PostgreSQL cookbook
+│   │   │   ├── recipes/
+│   │   │   │   └── default.rb
+│   │   │   └── metadata.rb
+│   │   └── ssm/                 # AWS SSM cookbook
+│   │       ├── recipes/
+│   │       │   └── default.rb
+│   │       └── metadata.rb
+│   ├── terraform/               # Terraform configurations
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   ├── network.tf
+│   │   ├── security_groups.tf
+│   │   └── iam.tf
+│   └── packer/                  # Packer configurations
+│       ├── aws_linux.json
+│       └── setup_aws_linux.sh
+└── Vagrantfile
+
+```
+New VargantFile
+```
+Vagrant.configure("2") do |config|
+  config.vm.box = "bento/amazonlinux-2"
+
+  # Run the setup_linux.sh script from the packer directory
+  config.vm.provision "shell", path: "infra/packer/setup_aws_linux.sh"
+
+  # Provision with Chef Solo
+  config.vm.provision "chef_solo" do |chef|
+    chef.add_recipe "cloudwatch"
+    chef.add_recipe "postgresql"
+    chef.add_recipe "ssm"
+
+    # Specify the new path to your cookbooks
+    chef.cookbooks_path = ["./infra/cookbooks"]
+    
+    # Update the roles path if you have any roles
+    chef.roles_path = "path/to/roles" # Update this path as needed
+  end
+end
+
+```
 ## Refactoring process for future terraform main.tf file, so the variables should be updated too. 
 ```
 # ... existing configuration ...
